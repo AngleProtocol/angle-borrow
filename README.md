@@ -34,6 +34,11 @@ Otherwise, for more info about the protocol, check out [this portal](https://lin
 ![Module Architecture](AngleBorrowingArchitecture.png)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+
+=======
+
+> > > > > > > f74ff4f (im)
 
 ### Remarks
 
@@ -50,10 +55,6 @@ Here are some cross-module contracts and the repos in which you should look for 
 ### Error Messages
 
 Some smart contracts use error messages. These error messages are sometimes encoded in numbers rather than as custom errors like done most of the time. The conversion from numbers to error messages can be found in `errorMessages.json`.
-
-=======
-
-> > > > > > > 0120812 (changing readme with improved links)
 
 ## Setup
 
