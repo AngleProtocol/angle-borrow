@@ -33,13 +33,6 @@ Otherwise, for more info about the protocol, check out [this portal](https://lin
 
 ![Module Architecture](AngleBorrowingArchitecture.png)
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-
-=======
-
-> > > > > > > f74ff4f (im)
-
 ### Remarks
 
 ### Cross-module Contracts
