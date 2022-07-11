@@ -5,9 +5,9 @@ import "./utils/ERC20UpgradeableCustom.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 import "../../interfaces/IAgToken.sol";
 import "../../interfaces/ITreasury.sol";
 
@@ -26,7 +26,7 @@ contract TokenPolygonUpgradeable is
 {
     bytes32 public constant DEPOSITOR_ROLE = keccak256("DEPOSITOR_ROLE");
 
-    /// @dev emitted when the child chain manager changes
+    /// @dev Emitted when the child chain manager changes
     event ChildChainManagerAdded(address newAddress);
     event ChildChainManagerRevoked(address oldAddress);
 
@@ -46,9 +46,9 @@ contract TokenPolygonUpgradeable is
     }
 
     /**
-     * @notice called when the bridge has tokens to mint
-     * @param user address to mint the token to
-     * @param depositData encoded amount to mint
+     * @notice Called when the bridge has tokens to mint
+     * @param user Address to mint the token to
+     * @param depositData Encoded amount to mint
      */
     function deposit(address user, bytes calldata depositData) external override {
         require(hasRole(DEPOSITOR_ROLE, msg.sender));
@@ -57,9 +57,9 @@ contract TokenPolygonUpgradeable is
     }
 
     /**
-     * @notice called when user wants to withdraw tokens back to root chain
+     * @notice Called when user wants to withdraw tokens back to root chain
      * @dev Should burn user's tokens. This transaction will be verified when exiting on root chain
-     * @param amount amount of tokens to withdraw
+     * @param amount Amount of tokens to withdraw
      */
     function withdraw(uint256 amount) external override {
         _burn(_msgSender(), amount);
@@ -84,40 +84,56 @@ contract TokenPolygonUpgradeable is
 
     /// @notice Struct with some data about a specific bridge token
     struct BridgeDetails {
+        // Limit on the balance of bridge token held by the contract: it is designed
+        // to reduce the exposure of the system to hacks
+        uint256 limit;
+        // Limit on the hourly volume of token minted through this bridge
+        // Technically the limit over a rolling hour is hourlyLimit x2 as hourly limit
+        // is enforced only between x:00 and x+1:00
+        uint256 hourlyLimit;
+        // Fee taken for swapping in and out the token
+        uint64 fee;
         // Whether the associated token is allowed or not
         bool allowed;
         // Whether swapping in and out from the associated token is paused or not
         bool paused;
-        // Limit on the balance of bridge token held by the contract: it is designed
-        // to reduce the exposure of the system to hacks
-        uint256 limit;
-        // Fee taken for swapping in and out the token
-        uint64 fee;
     }
 
     /// @notice Maps a bridge token to data
     mapping(address => BridgeDetails) public bridges;
     /// @notice List of all bridge tokens
     address[] public bridgeTokensList;
+    /// @notice Maps a bridge token to the associated hourly volume
+    mapping(address => mapping(uint256 => uint256)) public usage;
     /// @notice Maps an address to whether it is exempt of fees for when it comes to swapping in and out
-    mapping(address => bool) public isFeeExempt;
+    mapping(address => uint256) public isFeeExempt;
+    /// @notice Limit to the amount of tokens that can be sent from that chain to another chain
+    uint256 public chainTotalHourlyLimit;
+    /// @notice Usage per hour on that chain. Maps an hourly timestamp to the total volume swapped out on the chain
+    mapping(uint256 => uint256) public chainTotalUsage;
+
+    uint256[42] private __gap;
 
     // ================================== Events ===================================
 
-    event BridgeTokenAdded(address indexed bridgeToken, uint256 limit, uint64 fee, bool paused);
+    event BridgeTokenAdded(address indexed bridgeToken, uint256 limit, uint256 hourlyLimit, uint64 fee, bool paused);
     event BridgeTokenToggled(address indexed bridgeToken, bool toggleStatus);
     event BridgeTokenRemoved(address indexed bridgeToken);
     event BridgeTokenFeeUpdated(address indexed bridgeToken, uint64 fee);
     event BridgeTokenLimitUpdated(address indexed bridgeToken, uint256 limit);
-    event Recovered(address indexed token, address indexed to, uint256 amount);
-    event FeeToggled(address indexed theAddress, bool toggleStatus);
-    event TreasuryUpdated(address indexed _treasury);
+    event BridgeTokenHourlyLimitUpdated(address indexed bridgeToken, uint256 hourlyLimit);
+    event HourlyLimitUpdated(uint256 hourlyLimit);
+    event FeeToggled(address indexed theAddress, uint256 toggleStatus);
+    event KeeperToggled(address indexed keeper, bool toggleStatus);
     event MinterToggled(address indexed minter);
+    event Recovered(address indexed token, address indexed to, uint256 amount);
+    event TreasuryUpdated(address indexed _treasury);
 
     // ================================== Errors ===================================
 
     error AssetStillControlledInReserves();
     error BurnAmountExceedsAllowance();
+    error HourlyLimitExceeded();
     error InvalidSender();
     error InvalidToken();
     error InvalidTreasury();
@@ -128,6 +144,7 @@ contract TokenPolygonUpgradeable is
     error TooBigAmount();
     error TooHighParameterValue();
     error TreasuryAlreadyInitialized();
+    error ZeroAddress();
 
     /// @notice Checks to see if it is the `Treasury` calling this contract
     /// @dev There is no Access Control here, because it can be handled cheaply through this modifier
@@ -237,6 +254,18 @@ contract TokenPolygonUpgradeable is
         return bridgeTokensList;
     }
 
+    /// @notice Returns the current volume for a bridge, for the current hour
+    /// @dev Helpful for UIs
+    function currentUsage(address bridge) external view returns (uint256) {
+        return usage[bridge][block.timestamp / 3600];
+    }
+
+    /// @notice Returns the current total volume on the chain for the current hour
+    /// @dev Helpful for UIs
+    function currentTotalUsage() external view returns (uint256) {
+        return chainTotalUsage[block.timestamp / 3600];
+    }
+
     /// @notice Mints the canonical token from a supported bridge token
     /// @param bridgeToken Bridge token to use to mint
     /// @param amount Amount of bridge tokens to send
@@ -246,17 +275,40 @@ contract TokenPolygonUpgradeable is
         address bridgeToken,
         uint256 amount,
         address to
-    ) external {
+    ) external returns (uint256) {
         BridgeDetails memory bridgeDetails = bridges[bridgeToken];
         if (!bridgeDetails.allowed || bridgeDetails.paused) revert InvalidToken();
-        if (IERC20(bridgeToken).balanceOf(address(this)) + amount > bridgeDetails.limit) revert TooBigAmount();
+        uint256 balance = IERC20(bridgeToken).balanceOf(address(this));
+        if (balance + amount > bridgeDetails.limit) {
+            // In case someone maliciously sends tokens to this contract
+            // Or the limit changes
+            if (bridgeDetails.limit > balance) amount = bridgeDetails.limit - balance;
+            else {
+                amount = 0;
+            }
+        }
+
+        // Checking requirement on the hourly volume
+        uint256 hour = block.timestamp / 3600;
+        uint256 hourlyUsage = usage[bridgeToken][hour] + amount;
+        if (hourlyUsage > bridgeDetails.hourlyLimit) {
+            // Edge case when the hourly limit changes
+            if (bridgeDetails.hourlyLimit > usage[bridgeToken][hour])
+                amount = bridgeDetails.hourlyLimit - usage[bridgeToken][hour];
+            else {
+                amount = 0;
+            }
+        }
+        usage[bridgeToken][hour] = usage[bridgeToken][hour] + amount;
+
         IERC20(bridgeToken).safeTransferFrom(msg.sender, address(this), amount);
         uint256 canonicalOut = amount;
         // Computing fees
-        if (!isFeeExempt[msg.sender]) {
+        if (isFeeExempt[msg.sender] == 0) {
             canonicalOut -= (canonicalOut * bridgeDetails.fee) / BASE_PARAMS;
         }
         _mint(to, canonicalOut);
+        return canonicalOut;
     }
 
     /// @notice Burns the canonical token in exchange for a bridge token
@@ -268,15 +320,25 @@ contract TokenPolygonUpgradeable is
         address bridgeToken,
         uint256 amount,
         address to
-    ) external {
+    ) external returns (uint256) {
         BridgeDetails memory bridgeDetails = bridges[bridgeToken];
         if (!bridgeDetails.allowed || bridgeDetails.paused) revert InvalidToken();
+
+        uint256 hour = block.timestamp / 3600;
+        uint256 hourlyUsage = chainTotalUsage[hour] + amount;
+        // If the amount being swapped out exceeds the limit, we revert
+        // We don't want to change the amount being swapped out.
+        // The user can decide to send another tx with the correct amount to reach the limit
+        if (hourlyUsage > chainTotalHourlyLimit) revert HourlyLimitExceeded();
+        chainTotalUsage[hour] = hourlyUsage;
+
         _burnCustom(msg.sender, amount);
         uint256 bridgeOut = amount;
-        if (!isFeeExempt[msg.sender]) {
+        if (isFeeExempt[msg.sender] == 0) {
             bridgeOut -= (bridgeOut * bridgeDetails.fee) / BASE_PARAMS;
         }
         IERC20(bridgeToken).safeTransfer(to, bridgeOut);
+        return bridgeOut;
     }
 
     // ======================= Governance Functions ================================
@@ -284,11 +346,13 @@ contract TokenPolygonUpgradeable is
     /// @notice Adds support for a bridge token
     /// @param bridgeToken Bridge token to add: it should be a version of the stablecoin from another bridge
     /// @param limit Limit on the balance of bridge token this contract could hold
+    /// @param hourlyLimit Limit on the hourly volume for this bridge
     /// @param paused Whether swapping for this token should be paused or not
     /// @param fee Fee taken upon swapping for or against this token
     function addBridgeToken(
         address bridgeToken,
         uint256 limit,
+        uint256 hourlyLimit,
         uint64 fee,
         bool paused
     ) external onlyGovernor {
@@ -296,12 +360,13 @@ contract TokenPolygonUpgradeable is
         if (fee > BASE_PARAMS) revert TooHighParameterValue();
         BridgeDetails memory _bridge;
         _bridge.limit = limit;
+        _bridge.hourlyLimit = hourlyLimit;
         _bridge.paused = paused;
         _bridge.fee = fee;
         _bridge.allowed = true;
         bridges[bridgeToken] = _bridge;
         bridgeTokensList.push(bridgeToken);
-        emit BridgeTokenAdded(bridgeToken, limit, fee, paused);
+        emit BridgeTokenAdded(bridgeToken, limit, hourlyLimit, fee, paused);
     }
 
     /// @notice Removes support for a token
@@ -341,6 +406,19 @@ contract TokenPolygonUpgradeable is
         emit BridgeTokenLimitUpdated(bridgeToken, limit);
     }
 
+    /// @notice Updates the `hourlyLimit` amount for `bridgeToken`
+    function setHourlyLimit(address bridgeToken, uint256 hourlyLimit) external onlyGovernorOrGuardian {
+        if (!bridges[bridgeToken].allowed) revert InvalidToken();
+        bridges[bridgeToken].hourlyLimit = hourlyLimit;
+        emit BridgeTokenHourlyLimitUpdated(bridgeToken, hourlyLimit);
+    }
+
+    /// @notice Updates the `chainTotalHourlyLimit` amount
+    function setChainTotalHourlyLimit(uint256 hourlyLimit) external onlyGovernorOrGuardian {
+        chainTotalHourlyLimit = hourlyLimit;
+        emit HourlyLimitUpdated(hourlyLimit);
+    }
+
     /// @notice Updates the `fee` value for `bridgeToken`
     function setSwapFee(address bridgeToken, uint64 fee) external onlyGovernorOrGuardian {
         if (!bridges[bridgeToken].allowed) revert InvalidToken();
@@ -359,10 +437,8 @@ contract TokenPolygonUpgradeable is
 
     /// @notice Toggles fees for the address `theAddress`
     function toggleFeesForAddress(address theAddress) external onlyGovernorOrGuardian {
-        bool feeExemptStatus = isFeeExempt[theAddress];
-        isFeeExempt[theAddress] = !feeExemptStatus;
-        emit FeeToggled(theAddress, !feeExemptStatus);
+        uint256 feeExemptStatus = 1 - isFeeExempt[theAddress];
+        isFeeExempt[theAddress] = feeExemptStatus;
+        emit FeeToggled(theAddress, feeExemptStatus);
     }
-
-    uint256[49] private __gap;
 }

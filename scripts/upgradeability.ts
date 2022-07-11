@@ -28,13 +28,24 @@ async function main() {
   // Uncomment to check all valid build names
   // console.log((await artifacts.getAllFullyQualifiedNames()));
 
-  testUpgradeability('AgToken', 'contracts/agToken/AgToken.sol');
-  testUpgradeability('AgTokenIntermediateUpgrade', 'contracts/agToken/AgTokenIntermediateUpgrade.sol');
+  testUpgradeability('MockPolygonAgEUR', 'contracts/mock/MockPolygonAgEUR.sol');
+  testUpgradeability('TokenPolygonUpgradeable', 'contracts/agToken/polygon/TokenPolygonUpgradeable.sol');
+
+  testUpgradeability('MockSidechainAgEUR', 'contracts/mock/MockSidechainAgEUR.sol');
+  testUpgradeability('AgTokenSideChainMultiBridge', 'contracts/agToken/AgTokenSideChainMultiBridge.sol');
+
   testStorage(
-    'AgTokenIntermediateUpgrade',
-    'contracts/agToken/AgTokenIntermediateUpgrade.sol',
-    'AgToken',
-    'contracts/agToken/AgToken.sol',
+    'MockPolygonAgEUR',
+    'contracts/mock/MockPolygonAgEUR.sol',
+    'TokenPolygonUpgradeable',
+    'contracts/agToken/polygon/TokenPolygonUpgradeable.sol',
+  );
+
+  testStorage(
+    'MockSidechainAgEUR',
+    'contracts/mock/MockSidechainAgEUR.sol',
+    'AgTokenSideChainMultiBridge',
+    'contracts/agToken/AgTokenSideChainMultiBridge.sol',
   );
 }
 

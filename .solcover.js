@@ -10,13 +10,12 @@ module.exports = {
     'keeperMulticall/RevertReasonParser.sol',
     'mock',
     'oracle/OracleChainlinkMultiTemplate.sol',
-    'oracle/implementations/OracleWSTETHEURChainlink.sol',
-    'oracle/implementations/OracleBTCEURChainlink.sol',
-    'oracle/implementations/OracleETHEURChainlink.sol',
+    'oracle/implementations/',
     // Router here is a copy pasta of the router in another repo
     'router',
     'reactor/BaseReactorStorage.sol',
     'vaultManager/VaultManagerStorage.sol',
+    'keeperMulticall/KeeperMulticall.sol',
   ],
   providerOptions: {
     default_balance_ether: '10000000000000000000000000',
