@@ -11,6 +11,7 @@ import 'hardhat-abi-exporter';
 import '@nomiclabs/hardhat-ethers';
 import '@nomiclabs/hardhat-truffle5';
 import '@nomiclabs/hardhat-solhint';
+import '@nomiclabs/hardhat-etherscan';
 import '@openzeppelin/hardhat-upgrades';
 import 'solidity-coverage';
 import '@tenderly/hardhat-tenderly';
@@ -79,6 +80,7 @@ const config: HardhatUserConfig = {
     },
   },
   defaultNetwork: 'hardhat',
+  // For the lists of Chain ID: https://chainlist.org
   networks: {
     hardhat: {
       accounts: accounts('mainnet'),
@@ -88,11 +90,12 @@ const config: HardhatUserConfig = {
       hardfork: 'london',
       forking: {
         enabled: argv.fork || false,
-        url: nodeUrl('fork'),
-        // For Polygon
-        // blockNumber: 26536036,
         // For mainnet
-        blockNumber: 14665543,
+        // url: nodeUrl('fork'),
+        // blockNumber: 14665543,
+        // For Polygon
+        url: nodeUrl('forkpolygon'),
+        blockNumber: 26536036,
       },
       mining: argv.disableAutoMining
         ? {
@@ -126,6 +129,15 @@ const config: HardhatUserConfig = {
       url: nodeUrl('polygon'),
       accounts: accounts('polygon'),
       gas: 'auto',
+      chainId: 137,
+      gasPrice: 200e9,
+    },
+    fantom: {
+      live: true,
+      url: nodeUrl('fantom'),
+      accounts: accounts('fantom'),
+      gas: 'auto',
+      chainId: 250,
     },
     mainnet: {
       live: true,
@@ -134,6 +146,34 @@ const config: HardhatUserConfig = {
       gas: 'auto',
       gasMultiplier: 1.3,
       chainId: 1,
+    },
+    optimism: {
+      live: true,
+      url: nodeUrl('optimism'),
+      accounts: accounts('optimism'),
+      gas: 'auto',
+      chainId: 10,
+    },
+    arbitrum: {
+      live: true,
+      url: nodeUrl('arbitrum'),
+      accounts: accounts('arbitrum'),
+      gas: 'auto',
+      chainId: 42161,
+    },
+    avalanche: {
+      live: true,
+      url: nodeUrl('avalanche'),
+      accounts: accounts('avalanche'),
+      gas: 'auto',
+      chainId: 43114,
+    },
+    aurora: {
+      live: true,
+      url: nodeUrl('aurora'),
+      accounts: accounts('aurora'),
+      gas: 'auto',
+      chainId: 1313161554,
     },
   },
   paths: {
@@ -176,6 +216,18 @@ const config: HardhatUserConfig = {
   tenderly: {
     project: process.env.TENDERLY_PROJECT || '',
     username: process.env.TENDERLY_USERNAME || '',
+  },
+  etherscan: {
+    // eslint-disable-next-line
+    // @ts-ignore
+    apiKey: {
+      mainnet: process.env.ETHERSCAN_API_KEY,
+      optimisticEthereum: process.env.OPTIMISM_ETHERSCAN_API_KEY,
+      arbitrumOne: process.env.ARBITRUM_ETHERSCAN_API_KEY,
+      avalanche: process.env.AVALANCHE_ETHERSCAN_API_KEY,
+      polygon: process.env.POLYGON_ETHERSCAN_API_KEY,
+    },
+    // apiKey: process.env.ETHERSCAN_API_KEY,
   },
   typechain: {
     outDir: 'typechain',
