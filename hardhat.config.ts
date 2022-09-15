@@ -17,10 +17,17 @@ import 'solidity-coverage';
 import '@tenderly/hardhat-tenderly';
 import '@typechain/hardhat';
 
-import { HardhatUserConfig } from 'hardhat/config';
+import { TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS } from 'hardhat/builtin-tasks/task-names';
+import { HardhatUserConfig, subtask } from 'hardhat/config';
 import yargs from 'yargs';
 
-import { accounts, nodeUrl } from './utils/network';
+import { accounts, etherscanKey, nodeUrl } from './utils/network';
+
+// Otherwise, ".sol" files from "test" are picked up during compilation and throw an error
+subtask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS).setAction(async (_, __, runSuper) => {
+  const paths = await runSuper();
+  return paths.filter((p: string) => !p.includes('/test/foundry/'));
+});
 
 const argv = yargs
   .env('')
@@ -51,6 +58,15 @@ const config: HardhatUserConfig = {
     ],
     overrides: {
       'contracts/vaultManager/VaultManager.sol': {
+        version: '0.8.12',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1,
+          },
+        },
+      },
+      'contracts/helpers/AngleHelpers.sol': {
         version: '0.8.12',
         settings: {
           optimizer: {
@@ -90,12 +106,24 @@ const config: HardhatUserConfig = {
       hardfork: 'london',
       forking: {
         enabled: argv.fork || false,
-        // For mainnet
-        // url: nodeUrl('fork'),
-        // blockNumber: 14665543,
-        // For Polygon
+        // Mainnet
+        url: nodeUrl('fork'),
+        blockNumber: 15445391,
+        // Polygon
+        /*
         url: nodeUrl('forkpolygon'),
-        blockNumber: 26536036,
+        blockNumber: 31505333,
+        */
+        // Optimism
+        /*
+        url: nodeUrl('optimism'),
+        blockNumber: 17614765,
+        */
+        // Arbitrum
+        /*
+        url: nodeUrl('arbitrum'),
+        blockNumber: 19356874,
+        */
       },
       mining: argv.disableAutoMining
         ? {
@@ -131,6 +159,11 @@ const config: HardhatUserConfig = {
       gas: 'auto',
       chainId: 137,
       gasPrice: 200e9,
+      verify: {
+        etherscan: {
+          apiKey: etherscanKey('polygon'),
+        },
+      },
     },
     fantom: {
       live: true,
@@ -146,6 +179,11 @@ const config: HardhatUserConfig = {
       gas: 'auto',
       gasMultiplier: 1.3,
       chainId: 1,
+      verify: {
+        etherscan: {
+          apiKey: etherscanKey('mainnet'),
+        },
+      },
     },
     optimism: {
       live: true,
@@ -153,6 +191,11 @@ const config: HardhatUserConfig = {
       accounts: accounts('optimism'),
       gas: 'auto',
       chainId: 10,
+      verify: {
+        etherscan: {
+          apiKey: etherscanKey('optimism'),
+        },
+      },
     },
     arbitrum: {
       live: true,
@@ -160,6 +203,11 @@ const config: HardhatUserConfig = {
       accounts: accounts('arbitrum'),
       gas: 'auto',
       chainId: 42161,
+      verify: {
+        etherscan: {
+          apiKey: etherscanKey('arbitrum'),
+        },
+      },
     },
     avalanche: {
       live: true,
@@ -179,6 +227,7 @@ const config: HardhatUserConfig = {
   paths: {
     sources: './contracts',
     tests: './test',
+    cache: 'cache-hh',
   },
   namedAccounts: {
     deployer: 0,
@@ -218,16 +267,7 @@ const config: HardhatUserConfig = {
     username: process.env.TENDERLY_USERNAME || '',
   },
   etherscan: {
-    // eslint-disable-next-line
-    // @ts-ignore
-    apiKey: {
-      mainnet: process.env.ETHERSCAN_API_KEY,
-      optimisticEthereum: process.env.OPTIMISM_ETHERSCAN_API_KEY,
-      arbitrumOne: process.env.ARBITRUM_ETHERSCAN_API_KEY,
-      avalanche: process.env.AVALANCHE_ETHERSCAN_API_KEY,
-      polygon: process.env.POLYGON_ETHERSCAN_API_KEY,
-    },
-    // apiKey: process.env.ETHERSCAN_API_KEY,
+    apiKey: process.env.ETHERSCAN_API_KEY,
   },
   typechain: {
     outDir: 'typechain',
