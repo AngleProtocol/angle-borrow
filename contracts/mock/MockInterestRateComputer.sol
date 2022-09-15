@@ -41,6 +41,10 @@ contract MockInterestRateComputer {
         return (_interestAccumulator * (baseInterest + ratePerSecond * exp + secondTerm + thirdTerm)) / baseInterest;
     }
 
+    function _calculateCompound(uint256 exp, uint256 _interestAccumulator) internal view returns (uint256) {
+        return _interestAccumulator * (baseInterest + interestRate * exp);
+    }
+
     function _rpow(
         uint256 x,
         uint256 n,
@@ -154,6 +158,13 @@ contract MockInterestRateComputer {
     function calculateMaker1YearDirect() external view returns (uint256) {
         uint256 _interestAccumulator = interestAccumulator;
         _interestAccumulator = _calculateMaker(52 * WEEK, _interestAccumulator);
+
+        return _interestAccumulator;
+    }
+
+    function calculateCompound1YearDirect() external view returns (uint256) {
+        uint256 _interestAccumulator = interestAccumulator;
+        _interestAccumulator = _calculateCompound(52 * WEEK, _interestAccumulator);
 
         return _interestAccumulator;
     }
