@@ -128,7 +128,7 @@ describe('Keeper Multicall', async () => {
     );
 
     const upgradeBuildInfo = await artifacts.getBuildInfo(
-      'contracts/mock/MockKeeperMulticall2.sol:MockKeeperMulticall2',
+      'contracts/mock/MockKeeperMulticall.sol:MockKeeperMulticall2',
     );
     const upgradeContract = new UpgradeableContract(
       'MockKeeperMulticall2',
