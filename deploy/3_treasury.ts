@@ -1,10 +1,10 @@
 import { ChainId, CONTRACTS_ADDRESSES } from '@angleprotocol/sdk';
 import { DeployFunction } from 'hardhat-deploy/types';
 import yargs from 'yargs';
-import { expect } from '../test/utils/chai-setup';
-import { deployImplem, deployProxy } from './helpers';
 
+import { expect } from '../test/hardhat/utils/chai-setup';
 import { AgTokenSideChainMultiBridge, AgTokenSideChainMultiBridge__factory, Treasury__factory } from '../typechain';
+import { deployImplem, deployProxy } from './helpers';
 
 const argv = yargs.env('').boolean('ci').parseSync();
 
@@ -18,30 +18,37 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 
   if (!network.live || network.config.chainId == 1) {
     // If we're in mainnet fork, we're using the `ProxyAdmin` address from mainnet
-    proxyAdmin = CONTRACTS_ADDRESSES[ChainId.MAINNET].ProxyAdmin!;
-    agTokenAddress = CONTRACTS_ADDRESSES[ChainId.MAINNET].agEUR?.AgToken!;
+    proxyAdmin = CONTRACTS_ADDRESSES[ChainId.MAINNET]?.ProxyAdmin!;
+    agTokenAddress = CONTRACTS_ADDRESSES[ChainId.MAINNET]?.agEUR?.AgToken!;
   } else {
     // Otherwise, we're using the proxy admin address from the desired network and the newly deployed agToken
     proxyAdmin = (await ethers.getContract('ProxyAdmin')).address;
     if (network.config.chainId !== ChainId.POLYGON) {
       agTokenAddress = (await deployments.get(`AgToken_${stableName}`)).address;
     } else {
-      agTokenAddress = CONTRACTS_ADDRESSES[ChainId.POLYGON].agEUR?.AgToken!;
+      agTokenAddress = CONTRACTS_ADDRESSES[ChainId.POLYGON]?.agEUR?.AgToken!;
     }
   }
 
-  console.log('Now deploying Treasury');
-  const treasuryImplementation = await deployImplem('Treasury');
+  console.log('Now deploying Treasury implementation');
+
+  await deploy('Treasury_Implementation', {
+    contract: 'Treasury',
+    from: deployer.address,
+    args: [],
+    log: !argv.ci,
+  });
+
+  const treasuryImplementation = (await deployments.get('Treasury_Implementation')).address;
 
   const treasuryInterface = Treasury__factory.createInterface();
   const coreBorrow = await deployments.get('CoreBorrow');
-  const dataTreasury = new ethers.Contract(
-    treasuryImplementation,
-    treasuryInterface,
-  ).interface.encodeFunctionData('initialize', [coreBorrow.address, agTokenAddress]);
+  const dataTreasury = new ethers.Contract(treasuryImplementation, treasuryInterface).interface.encodeFunctionData(
+    'initialize',
+    [coreBorrow.address, agTokenAddress],
+  );
 
   const treasury = await deployProxy('Treasury', treasuryImplementation, proxyAdmin, dataTreasury);
-  // const treasury = (await deployments.get('Treasury')).address;
 
   console.log('');
   if (network.config.chainId != 1 && network.config.chainId != ChainId.POLYGON) {
@@ -57,5 +64,5 @@ const func: DeployFunction = async ({ deployments, ethers, network }) => {
 };
 
 func.tags = ['treasury'];
-func.dependencies = ['agTokenImplementation'];
+// func.dependencies = ['agTokenImplementation'];
 export default func;

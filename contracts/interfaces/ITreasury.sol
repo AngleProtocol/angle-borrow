@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity 0.8.12;
+pragma solidity ^0.8.12;
 
 import "./IAgToken.sol";
 import "./ICoreBorrow.sol";
 import "./IFlashAngle.sol";
 
 /// @title ITreasury
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 /// @notice Interface for the `Treasury` contract
 /// @dev This interface only contains functions of the `Treasury` which are called by other contracts
 /// of this module
@@ -29,7 +29,7 @@ interface ITreasury {
     function isGovernorOrGuardian(address admin) external view returns (bool);
 
     /// @notice Checks whether a given address has well been initialized in this contract
-    /// as a `VaultManager``
+    /// as a `VaultManager`
     /// @param _vaultManager Address to check
     /// @return Whether the address has been initialized or not
     function isVaultManager(address _vaultManager) external view returns (bool);

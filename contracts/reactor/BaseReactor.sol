@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
-pragma solidity 0.8.12;
+pragma solidity ^0.8.12;
 
 import "./BaseReactorStorage.sol";
 
 /// @title BaseReactor
 /// @notice Reactor for using a token as collateral for agTokens. ERC4646 tokenized Vault implementation.
-/// @author Angle Core Team, based on Solmate (https://github.com/Rari-Capital/solmate/blob/main/src/mixins/ERC4626.sol)
+/// @author Angle Labs, Inc., based on Solmate (https://github.com/Rari-Capital/solmate/blob/main/src/mixins/ERC4626.sol)
 /// @dev A token used as an asset built to exploit this reactor could perform reentrancy attacks if not enough checks
 /// are performed: as such the protocol implements reentrancy checks on all external entry point
 abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721ReceiverUpgradeable, IERC4626 {
@@ -377,7 +377,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
             datas[len] = abi.encodePacked(vaultID, toWithdraw - looseAssets);
         }
 
-        if (toRepay > 0) {
+        if (toRepay != 0) {
             toRepay = toRepay == type(uint256).max ? debt : toRepay;
             _pull(toRepay);
         }
@@ -392,7 +392,7 @@ abstract contract BaseReactor is BaseReactorStorage, ERC20Upgradeable, IERC721Re
         );
 
         // VaultManagers always round to their advantages + there can be a borrow fee taken
-        if (toBorrow > 0) {
+        if (toBorrow != 0) {
             lastDebt += paymentData.stablecoinAmountToGive;
             // If there is a borrow fee, then it will be seen as a loss at the next rebalance
             _push(paymentData.stablecoinAmountToGive);

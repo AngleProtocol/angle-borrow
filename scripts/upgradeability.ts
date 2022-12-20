@@ -21,31 +21,21 @@ const testStorage = async (name: string, file: string, nameUpgrade: string, file
   );
   console.log('Upgrade Testing');
   console.log(baseContract.getStorageUpgradeReport(upgradeContract).explain());
-  console.log('');
+  console.log('Done');
 };
 
 async function main() {
   // Uncomment to check all valid build names
   // console.log((await artifacts.getAllFullyQualifiedNames()));
 
-  testUpgradeability('MockPolygonAgEUR', 'contracts/mock/MockPolygonAgEUR.sol');
-  testUpgradeability('TokenPolygonUpgradeable', 'contracts/agToken/polygon/TokenPolygonUpgradeable.sol');
-
-  testUpgradeability('MockSidechainAgEUR', 'contracts/mock/MockSidechainAgEUR.sol');
-  testUpgradeability('AgTokenSideChainMultiBridge', 'contracts/agToken/AgTokenSideChainMultiBridge.sol');
+  testUpgradeability('VaultManagerLiquidationBoost', 'contracts/vaultManager/VaultManagerLiquidationBoost.sol');
+  testUpgradeability('OldVaultManager', 'contracts/deprecated/vaultManager/OldVaultManager.sol');
 
   testStorage(
-    'MockPolygonAgEUR',
-    'contracts/mock/MockPolygonAgEUR.sol',
-    'TokenPolygonUpgradeable',
-    'contracts/agToken/polygon/TokenPolygonUpgradeable.sol',
-  );
-
-  testStorage(
-    'MockSidechainAgEUR',
-    'contracts/mock/MockSidechainAgEUR.sol',
-    'AgTokenSideChainMultiBridge',
-    'contracts/agToken/AgTokenSideChainMultiBridge.sol',
+    'OldVaultManager',
+    'contracts/deprecated/vaultManager/OldVaultManager.sol',
+    'VaultManagerLiquidationBoost',
+    'contracts/vaultManager/VaultManagerLiquidationBoost.sol',
   );
 }
 

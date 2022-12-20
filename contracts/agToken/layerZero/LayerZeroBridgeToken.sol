@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.12;
+pragma solidity ^0.8.12;
 
 import "./utils/OFTCore.sol";
 import "../../interfaces/IAgTokenSideChainMultiBridge.sol";
@@ -8,7 +8,7 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
 /// @title LayerZeroBridgeToken
-/// @author Angle Core Team, forked from https://github.com/LayerZero-Labs/solidity-examples/blob/main/contracts/token/oft/OFT.sol
+/// @author Angle Labs, Inc., forked from https://github.com/LayerZero-Labs/solidity-examples/blob/main/contracts/token/oft/OFT.sol
 /// @notice Contract to be deployed on a L2/sidechain for bridging an AgToken using a bridge intermediate token and LayerZero
 contract LayerZeroBridgeToken is OFTCore, ERC20Upgradeable, PausableUpgradeable {
     /// @notice Address of the bridgeable token
@@ -71,7 +71,7 @@ contract LayerZeroBridgeToken is OFTCore, ERC20Upgradeable, PausableUpgradeable 
         _transfer(msg.sender, address(this), amount);
         amountMinted = canonicalToken.swapIn(address(this), amount, recipient);
         uint256 leftover = balanceOf(address(this));
-        if (leftover > 0) {
+        if (leftover != 0) {
             _transfer(address(this), msg.sender, leftover);
         }
     }
@@ -111,7 +111,7 @@ contract LayerZeroBridgeToken is OFTCore, ERC20Upgradeable, PausableUpgradeable 
         _mint(address(this), _amount);
         amountMinted = canonicalToken.swapIn(address(this), _amount, _toAddress);
         uint256 leftover = balanceOf(address(this));
-        if (leftover > 0) {
+        if (leftover != 0) {
             _transfer(address(this), _toAddress, leftover);
         }
     }

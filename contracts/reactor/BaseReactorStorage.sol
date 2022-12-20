@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
-pragma solidity 0.8.12;
+pragma solidity ^0.8.12;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
@@ -12,7 +12,7 @@ import "../interfaces/external/IERC4626.sol";
 import "../interfaces/IVaultManager.sol";
 
 /// @title BaseReactorStorage
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 /// @dev Variables, references, parameters and events needed in the `BaseReactor` contract
 // solhint-disable-next-line max-states-count
 contract BaseReactorStorage is Initializable, ReentrancyGuardUpgradeable {

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity 0.8.12;
+pragma solidity ^0.8.12;
 
 import "../interfaces/ICoreBorrow.sol";
 import "../interfaces/IFlashAngle.sol";
@@ -20,7 +20,7 @@ contract MockCoreBorrow is ICoreBorrow {
     }
 
     function isGovernorOrGuardian(address admin) external view override returns (bool) {
-        return guardians[admin];
+        return governors[admin] || guardians[admin];
     }
 
     function toggleGovernor(address admin) external {

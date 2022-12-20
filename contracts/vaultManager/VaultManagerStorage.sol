@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity 0.8.12;
+pragma solidity ^0.8.12;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/draft-IERC20PermitUpgradeable.sol";
@@ -21,7 +21,7 @@ import "../interfaces/IVaultManager.sol";
 import "../interfaces/governance/IVeBoostProxy.sol";
 
 /// @title VaultManagerStorage
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 /// @dev Variables, references, parameters and events needed in the `VaultManager` contract
 // solhint-disable-next-line max-states-count
 contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyGuardUpgradeable {
@@ -32,7 +32,7 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     /// @notice Used for interest rate computation
     uint256 public constant HALF_BASE_INTEREST = 10**27 / 2;
 
-    // =============================== References ==================================
+    // ================================= REFERENCES ================================
 
     /// @inheritdoc IVaultManagerStorage
     ITreasury public treasury;
@@ -47,14 +47,9 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     /// @notice Base of the collateral
     uint256 internal _collatBase;
 
-    // =============================== Parameters ==================================
+    // ================================= PARAMETERS ================================
     // Unless specified otherwise, parameters of this contract are expressed in `BASE_PARAMS`
 
-    /// @inheritdoc IVaultManagerStorage
-    uint256 public immutable dust;
-    /// @notice Minimum amount of collateral (in stablecoin value, e.g in `BASE_TOKENS = 10**18`) that can be left
-    ///  in a vault during a liquidation where the health factor function is decreasing
-    uint256 internal immutable _dustCollateral;
     /// @notice Maximum amount of stablecoins that can be issued with this contract (in `BASE_TOKENS`). This parameter should
     /// not be bigger than `type(uint256).max / BASE_INTEREST` otherwise there may be some overflows in the `increaseDebt` function
     uint256 public debtCeiling;
@@ -86,7 +81,7 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     /// @notice Whether the contract is paused or not
     bool public paused;
 
-    // =============================== Variables ===================================
+    // ================================= VARIABLES =================================
 
     /// @notice Timestamp at which the `interestAccumulator` was updated
     uint256 public lastInterestAccumulatorUpdated;
@@ -101,14 +96,14 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     /// of stablecoins
     uint256 public badDebt;
 
-    // ================================ Mappings ===================================
+    // ================================== MAPPINGS =================================
 
     /// @inheritdoc IVaultManagerStorage
     mapping(uint256 => Vault) public vaultData;
     /// @notice Maps an address to 1 if it's whitelisted and can open or own a vault
     mapping(address => uint256) public isWhitelisted;
 
-    // ================================ ERC721 Data ================================
+    // ================================ ERC721 DATA ================================
 
     /// @inheritdoc IVaultManagerStorage
     uint256 public vaultIDCount;
@@ -130,7 +125,7 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
 
     uint256[50] private __gap;
 
-    // =============================== Events ======================================
+    // =================================== EVENTS ==================================
 
     event AccruedToTreasury(uint256 surplusEndValue, uint256 badDebtEndValue);
     event CollateralAmountUpdated(uint256 vaultID, uint256 collateralAmount, uint8 isIncrease);
@@ -142,7 +137,7 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     event LiquidatedVaults(uint256[] vaultIDs);
     event DebtTransferred(uint256 srcVaultID, uint256 dstVaultID, address dstVaultManager, uint256 amount);
 
-    // =============================== Errors ======================================
+    // =================================== ERRORS ==================================
 
     error ApprovalToOwner();
     error ApprovalToCaller();
@@ -168,12 +163,6 @@ contract VaultManagerStorage is IVaultManagerStorage, Initializable, ReentrancyG
     error TooSmallParameterValue();
     error ZeroAddress();
 
-    /// @param _dust Minimum amount of debt a vault from this implementation can have
-    /// @param dustCollateral_ Minimum amount of collateral (in stablecoin value) that can be left in a vault during a liquidation
-    /// where the health factor function is decreasing
-    /// @dev Run only at the implementation level
-    constructor(uint256 _dust, uint256 dustCollateral_) initializer {
-        dust = _dust;
-        _dustCollateral = dustCollateral_;
-    }
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() initializer {}
 }

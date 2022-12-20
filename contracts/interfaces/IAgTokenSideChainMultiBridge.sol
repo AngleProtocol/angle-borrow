@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity 0.8.12;
+pragma solidity ^0.8.12;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/draft-IERC20PermitUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 
 /// @title IAgTokenSideChainMultiBridge
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 /// @notice Interface for the canonical `AgToken` contracts
 /// @dev This interface only contains functions useful for bridge tokens to interact with the canonical token
 interface IAgTokenSideChainMultiBridge is IERC20PermitUpgradeable, IERC20Upgradeable {

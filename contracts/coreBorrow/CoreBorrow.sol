@@ -1,6 +1,39 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity 0.8.12;
+/*
+                  *                                                  █                              
+                *****                                               ▓▓▓                             
+                  *                                               ▓▓▓▓▓▓▓                         
+                                   *            ///.           ▓▓▓▓▓▓▓▓▓▓▓▓▓                       
+                                 *****        ////////            ▓▓▓▓▓▓▓                          
+                                   *       /////////////            ▓▓▓                             
+                     ▓▓                  //////////////////          █         ▓▓                   
+                   ▓▓  ▓▓             ///////////////////////                ▓▓   ▓▓                
+                ▓▓       ▓▓        ////////////////////////////           ▓▓        ▓▓              
+              ▓▓            ▓▓    /////////▓▓▓///////▓▓▓/////////       ▓▓             ▓▓            
+           ▓▓                 ,////////////////////////////////////// ▓▓                 ▓▓         
+        ▓▓                  //////////////////////////////////////////                     ▓▓      
+      ▓▓                  //////////////////////▓▓▓▓/////////////////////                          
+                       ,////////////////////////////////////////////////////                        
+                    .//////////////////////////////////////////////////////////                     
+                     .//////////////////////////██.,//////////////////////////█                     
+                       .//////////////////////████..,./////////////////////██                       
+                        ...////////////////███████.....,.////////////////███                        
+                          ,.,////////////████████ ........,///////////████                          
+                            .,.,//////█████████      ,.......///////████                            
+                               ,..//████████           ........./████                               
+                                 ..,██████                .....,███                                 
+                                    .██                     ,.,█                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+               ▓▓            ▓▓▓▓▓▓▓▓▓▓       ▓▓▓▓▓▓▓▓▓▓        ▓▓               ▓▓▓▓▓▓▓▓▓▓          
+             ▓▓▓▓▓▓          ▓▓▓    ▓▓▓       ▓▓▓               ▓▓               ▓▓   ▓▓▓▓         
+           ▓▓▓    ▓▓▓        ▓▓▓    ▓▓▓       ▓▓▓    ▓▓▓        ▓▓               ▓▓▓▓▓             
+          ▓▓▓        ▓▓      ▓▓▓    ▓▓▓       ▓▓▓▓▓▓▓▓▓▓        ▓▓▓▓▓▓▓▓▓▓       ▓▓▓▓▓▓▓▓▓▓          
+*/
+
+pragma solidity ^0.8.12;
 
 import "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -10,7 +43,7 @@ import "../interfaces/IFlashAngle.sol";
 import "../interfaces/ITreasury.sol";
 
 /// @title CoreBorrow
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 /// @notice Core contract of the borrowing module. This contract handles the access control across all contracts
 /// (it is read by all treasury contracts), and manages the `flashLoanModule`. It has no minting rights over the
 /// stablecoin contracts
@@ -127,7 +160,7 @@ contract CoreBorrow is ICoreBorrow, Initializable, AccessControlEnumerableUpgrad
             if (address(IFlashAngle(_flashLoanModule).core()) != address(this)) revert InvalidCore();
         }
         uint256 count = getRoleMemberCount(FLASHLOANER_TREASURY_ROLE);
-        for (uint256 i = 0; i < count; i++) {
+        for (uint256 i; i < count; ++i) {
             ITreasury(getRoleMember(FLASHLOANER_TREASURY_ROLE, i)).setFlashLoanModule(_flashLoanModule);
         }
         flashLoanModule = _flashLoanModule;
@@ -143,7 +176,7 @@ contract CoreBorrow is ICoreBorrow, Initializable, AccessControlEnumerableUpgrad
     function setCore(ICoreBorrow _core) external onlyRole(GOVERNOR_ROLE) {
         uint256 count = getRoleMemberCount(GOVERNOR_ROLE);
         bool success;
-        for (uint256 i = 0; i < count; i++) {
+        for (uint256 i; i < count; ++i) {
             success = _core.isGovernor(getRoleMember(GOVERNOR_ROLE, i));
             if (!success) break;
         }

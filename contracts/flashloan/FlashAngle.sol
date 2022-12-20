@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity 0.8.12;
+pragma solidity ^0.8.12;
 
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -15,7 +15,7 @@ import "../interfaces/IFlashAngle.sol";
 import "../interfaces/ITreasury.sol";
 
 /// @title FlashAngle
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 /// @notice Contract to take flash loans on top of several AgToken contracts
 contract FlashAngle is IERC3156FlashLender, IFlashAngle, Initializable, ReentrancyGuardUpgradeable {
     using SafeERC20 for IERC20;

@@ -2,7 +2,7 @@ import { BigNumber, Contract } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
 import { DeployFunction } from 'hardhat-deploy/types';
 
-import { ZERO_ADDRESS } from '../../test/utils/helpers';
+import { ZERO_ADDRESS } from '../../test/hardhat/utils/helpers';
 import {
   AgTokenSideChainMultiBridge,
   AgTokenSideChainMultiBridge__factory,
@@ -14,6 +14,7 @@ import LZ_ENDPOINTS from '../constants/layerzeroEndpoints.json';
 import { deploy, deployImplem, deployProxy } from '../helpers';
 
 const func: DeployFunction = async ({ ethers, network }) => {
+  /*
   // Using an EOA as proxyAdmin as it's a mock deployment
   const { deployer, proxyAdmin } = await ethers.getNamedSigners();
 
@@ -55,7 +56,11 @@ const func: DeployFunction = async ({ ethers, network }) => {
     'LayerZeroBridge',
     layerZeroBridgeImplem,
     proxyAdmin.address,
-    LayerZeroBridge__factory.createInterface().encodeFunctionData('initialize', [endpointAddr, treasury]),
+    LayerZeroBridge__factory.createInterface().encodeFunctionData('initialize', [
+      'LayerZero Bridge agEUR',
+      endpointAddr,
+      treasury,
+    ]),
     true,
   );
 
@@ -74,6 +79,7 @@ const func: DeployFunction = async ({ ethers, network }) => {
       false,
     )
   ).wait();
+  */
 };
 
 func.tags = ['mockLayerZeroBridge'];

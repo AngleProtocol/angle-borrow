@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity 0.8.12;
+pragma solidity ^0.8.12;
 
 import "./IAgToken.sol";
 import "./ICoreBorrow.sol";
 
 /// @title IFlashAngle
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 /// @notice Interface for the `FlashAngle` contract
 /// @dev This interface only contains functions of the contract which are called by other contracts
 /// of this module

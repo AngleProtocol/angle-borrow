@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity 0.8.12;
+pragma solidity ^0.8.12;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
@@ -11,7 +11,7 @@ import "./RevertReasonParser.sol";
 
 /// @title KeeperMulticall
 /// @notice Allows an authorized caller (keeper) to execute multiple actions in a single tx.
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 /// @dev Special features:
 ///         - ability to pay the miner (for private Flashbots transactions)
 ///         - swap tokens through 1inch
@@ -44,7 +44,7 @@ contract KeeperMulticall is Initializable, AccessControlUpgradeable {
 
     constructor() initializer {}
 
-    function initialize(address keeper) public initializer {
+    function initialize(address keeper) external initializer {
         __AccessControl_init();
 
         _setupRole(KEEPER_ROLE, keeper);
@@ -69,11 +69,11 @@ contract KeeperMulticall is Initializable, AccessControlUpgradeable {
 
         uint256 balanceBefore = address(this).balance;
 
-        for (uint256 i = 0; i < numberOfActions; ++i) {
+        for (uint256 i; i < numberOfActions; ++i) {
             returnValues[i] = _executeAction(actions[i]);
         }
 
-        if (percentageToMiner > 0) {
+        if (percentageToMiner != 0) {
             if (percentageToMiner >= 10000) revert WrongAmount();
             uint256 balanceAfter = address(this).balance;
             if (balanceAfter > balanceBefore) {
@@ -146,7 +146,7 @@ contract KeeperMulticall is Initializable, AccessControlUpgradeable {
 
     /// @notice Copied from 1Inch contract, used to revert if there is an error
     function _revertBytes(bytes memory errMsg) internal pure {
-        if (errMsg.length > 0) {
+        if (errMsg.length != 0) {
             //solhint-disable-next-line
             assembly {
                 revert(add(32, errMsg), mload(errMsg))

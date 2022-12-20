@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity 0.8.12;
+pragma solidity ^0.8.12;
 
 import "@openzeppelin/contracts/interfaces/IERC721Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -93,7 +93,7 @@ enum ActionType {
 // ========================= Interfaces =============================
 
 /// @title IVaultManagerFunctions
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 /// @notice Interface for the `VaultManager` contract
 /// @dev This interface only contains functions of the contract which are called by other contracts
 /// of this module (without getters)
@@ -193,17 +193,17 @@ interface IVaultManagerFunctions {
         VaultParameters calldata params,
         string memory _symbol
     ) external;
+
+    /// @notice Minimum amount of debt a vault can have, expressed in `BASE_TOKENS` that is to say the base of the agTokens
+    function dust() external view returns (uint256);
 }
 
 /// @title IVaultManagerStorage
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 /// @notice Interface for the `VaultManager` contract
 /// @dev This interface contains getters of the contract's public variables used by other contracts
 /// of this module
 interface IVaultManagerStorage {
-    /// @notice Minimum amount of debt a vault can have, expressed in `BASE_TOKENS` that is to say the base of the agTokens
-    function dust() external view returns (uint256);
-
     /// @notice Encodes the maximum ratio stablecoin/collateral a vault can have before being liquidated. It's what
     /// determines the minimum collateral ratio of a position
     function collateralFactor() external view returns (uint64);
@@ -242,8 +242,17 @@ interface IVaultManagerStorage {
 }
 
 /// @title IVaultManager
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 /// @notice Interface for the `VaultManager` contract
 interface IVaultManager is IVaultManagerFunctions, IVaultManagerStorage, IERC721Metadata {
+    function isApprovedOrOwner(address spender, uint256 vaultID) external view returns (bool);
+}
 
+/// @title IVaultManagerListing
+/// @author Angle Labs, Inc.
+/// @notice Interface for the `VaultManagerListing` contract
+interface IVaultManagerListing is IVaultManager {
+    /// @notice Get the collateral owned by `user` in the contract
+    /// @dev This function effectively sums the collateral amounts of all the vaults owned by `user`
+    function getUserCollateral(address user) external view returns (uint256);
 }

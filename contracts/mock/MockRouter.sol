@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity 0.8.12;
+pragma solidity ^0.8.12;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -92,7 +92,7 @@ contract MockRouter is IUniswapV3Router, IWStETH {
     ) public payable virtual {
         paramsPermit;
         counterMixer += 1;
-        for (uint256 i = 0; i < actions.length; i++) {
+        for (uint256 i; i < actions.length; ++i) {
             if (actions[i] == ActionType.transfer) {
                 (address transferToken, uint256 amount) = abi.decode(data[i], (address, uint256));
                 IERC20(transferToken).safeTransferFrom(msg.sender, address(this), amount);

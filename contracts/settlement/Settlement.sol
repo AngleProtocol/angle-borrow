@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity 0.8.12;
+pragma solidity ^0.8.12;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -11,7 +11,7 @@ import "../interfaces/ISwapper.sol";
 import "../interfaces/IVaultManager.sol";
 
 /// @title Settlement
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 /// @notice Settlement Contract for a VaultManager
 /// @dev This settlement contract should be activated by a careful governance which needs to have performed
 /// some key operations before activating this contract
@@ -218,7 +218,7 @@ contract Settlement {
         bytes memory data
     ) internal returns (uint256, uint256) {
         collateral.safeTransfer(to, collateralAmountToGive);
-        if (data.length > 0) {
+        if (data.length != 0) {
             ISwapper(who).swap(
                 collateral,
                 IERC20(address(stablecoin)),

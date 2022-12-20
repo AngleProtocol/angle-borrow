@@ -1,11 +1,44 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity 0.8.12;
+/*
+                  *                                                  █                              
+                *****                                               ▓▓▓                             
+                  *                                               ▓▓▓▓▓▓▓                         
+                                   *            ///.           ▓▓▓▓▓▓▓▓▓▓▓▓▓                       
+                                 *****        ////////            ▓▓▓▓▓▓▓                          
+                                   *       /////////////            ▓▓▓                             
+                     ▓▓                  //////////////////          █         ▓▓                   
+                   ▓▓  ▓▓             ///////////////////////                ▓▓   ▓▓                
+                ▓▓       ▓▓        ////////////////////////////           ▓▓        ▓▓              
+              ▓▓            ▓▓    /////////▓▓▓///////▓▓▓/////////       ▓▓             ▓▓            
+           ▓▓                 ,////////////////////////////////////// ▓▓                 ▓▓         
+        ▓▓                  //////////////////////////////////////////                     ▓▓      
+      ▓▓                  //////////////////////▓▓▓▓/////////////////////                          
+                       ,////////////////////////////////////////////////////                        
+                    .//////////////////////////////////////////////////////////                     
+                     .//////////////////////////██.,//////////////////////////█                     
+                       .//////////////////////████..,./////////////////////██                       
+                        ...////////////////███████.....,.////////////////███                        
+                          ,.,////////////████████ ........,///////////████                          
+                            .,.,//////█████████      ,.......///////████                            
+                               ,..//████████           ........./████                               
+                                 ..,██████                .....,███                                 
+                                    .██                     ,.,█                                    
+                                                                                                    
+                                                                                                    
+                                                                                                    
+               ▓▓            ▓▓▓▓▓▓▓▓▓▓       ▓▓▓▓▓▓▓▓▓▓        ▓▓               ▓▓▓▓▓▓▓▓▓▓          
+             ▓▓▓▓▓▓          ▓▓▓    ▓▓▓       ▓▓▓               ▓▓               ▓▓   ▓▓▓▓         
+           ▓▓▓    ▓▓▓        ▓▓▓    ▓▓▓       ▓▓▓    ▓▓▓        ▓▓               ▓▓▓▓▓             
+          ▓▓▓        ▓▓      ▓▓▓    ▓▓▓       ▓▓▓▓▓▓▓▓▓▓        ▓▓▓▓▓▓▓▓▓▓       ▓▓▓▓▓▓▓▓▓▓          
+*/
+
+pragma solidity ^0.8.12;
 
 import "./VaultManagerPermit.sol";
 
 /// @title VaultManager
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 /// @notice This contract allows people to deposit collateral and open up loans of a given AgToken. It handles all the loan
 /// logic (fees and interest rate) as well as the liquidation logic
 /// @dev This implementation only supports non-rebasing ERC20 tokens as collateral
@@ -13,6 +46,19 @@ import "./VaultManagerPermit.sol";
 contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
     using SafeERC20 for IERC20;
     using Address for address;
+
+    /// @inheritdoc IVaultManagerFunctions
+    uint256 public dust;
+
+    /// @notice Minimum amount of collateral (in stablecoin value, e.g in `BASE_TOKENS = 10**18`) that can be left
+    /// in a vault during a liquidation where the health factor function is decreasing
+    uint256 internal _dustCollateral;
+
+    /// @notice If the amount of debt of a vault that gets liquidated is below this amount, then the liquidator
+    /// can liquidate all the debt of the vault (and not just what's needed to get to the target health factor)
+    uint256 public dustLiquidation;
+
+    uint256[47] private __gapVaultManager;
 
     /// @inheritdoc IVaultManagerFunctions
     function initialize(
@@ -56,10 +102,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         paused = true;
     }
 
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(uint256 dust_, uint256 dustCollateral_) VaultManagerStorage(dust_, dustCollateral_) {}
-
-    // ============================== Modifiers ====================================
+    // ================================= MODIFIERS =================================
 
     /// @notice Checks whether the `msg.sender` has the governor role or not
     modifier onlyGovernor() {
@@ -85,9 +128,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         _;
     }
 
-    // =========================== Vault Functions =================================
-
-    // ========================= External Access Functions =========================
+    // ============================== VAULT FUNCTIONS ==============================
 
     /// @inheritdoc IVaultManagerFunctions
     function createVault(address toVault) external whenNotPaused returns (uint256) {
@@ -121,7 +162,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         uint256 collateralAmount;
         uint256 stablecoinAmount;
         uint256 vaultID;
-        for (uint256 i = 0; i < actions.length; i++) {
+        for (uint256 i; i < actions.length; ++i) {
             ActionType action = actions[i];
             // Processing actions which do not need the value of the oracle or of the `interestAccumulator`
             if (action == ActionType.createVault) {
@@ -227,7 +268,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
                     repayData
                 );
             } else {
-                if (stablecoinPayment > 0) stablecoin.burnFrom(stablecoinPayment, from, msg.sender);
+                if (stablecoinPayment != 0) stablecoin.burnFrom(stablecoinPayment, from, msg.sender);
                 // In this case the collateral amount is necessarily non null
                 collateral.safeTransferFrom(
                     msg.sender,
@@ -243,8 +284,8 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
                 collateral.safeTransfer(to, paymentData.collateralAmountToGive - paymentData.collateralAmountToReceive);
             } else {
                 uint256 collateralPayment = paymentData.collateralAmountToReceive - paymentData.collateralAmountToGive;
-                if (collateralPayment > 0) {
-                    if (repayData.length > 0) {
+                if (collateralPayment != 0) {
+                    if (repayData.length != 0) {
                         ISwapper(who).swap(
                             IERC20(address(stablecoin)),
                             collateral,
@@ -292,7 +333,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         _repayDebt(vaultID, stablecoinAmountLessFeePaid, 0);
     }
 
-    // ============================= View Functions ================================
+    // =============================== VIEW FUNCTIONS ==============================
 
     /// @inheritdoc IVaultManagerFunctions
     function getVaultDebt(uint256 vaultID) external view returns (uint256) {
@@ -322,7 +363,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         );
     }
 
-    // =================== Internal Utility View Functions =========================
+    // ====================== INTERNAL UTILITY VIEW FUNCTIONS ======================
 
     /// @notice Computes the health factor of a given vault. This can later be used to check whether a given vault is solvent
     /// (i.e. should be liquidated or not)
@@ -370,7 +411,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         return (interestAccumulator * (BASE_INTEREST + ratePerSecond * exp + secondTerm + thirdTerm)) / BASE_INTEREST;
     }
 
-    // =============== Internal Utility State-Modifying Functions ==================
+    // ================= INTERNAL UTILITY STATE-MODIFYING FUNCTIONS ================
 
     /// @notice Closes a vault without handling the repayment of the concerned address
     /// @param vaultID ID of the vault to close
@@ -399,6 +440,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
     /// @param collateralAmount Amount by which increasing the collateral balance of
     function _addCollateral(uint256 vaultID, uint256 collateralAmount) internal {
         if (!_exists(vaultID)) revert NonexistentVault();
+        _checkpointCollateral(vaultID, collateralAmount, true);
         vaultData[vaultID].collateralAmount += collateralAmount;
         emit CollateralAmountUpdated(vaultID, collateralAmount, 1);
     }
@@ -415,6 +457,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         uint256 oracleValue,
         uint256 interestAccumulator_
     ) internal onlyApprovedOrOwner(msg.sender, vaultID) {
+        _checkpointCollateral(vaultID, collateralAmount, false);
         vaultData[vaultID].collateralAmount -= collateralAmount;
         (uint256 healthFactor, , ) = _isSolvent(vaultData[vaultID], oracleValue, interestAccumulator_);
         if (healthFactor <= BASE_PARAMS) revert InsolventVault();
@@ -559,9 +602,9 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         address who,
         bytes memory data
     ) internal {
-        if (collateralAmountToGive > 0) collateral.safeTransfer(to, collateralAmountToGive);
-        if (stableAmountToRepay > 0) {
-            if (data.length > 0) {
+        if (collateralAmountToGive != 0) collateral.safeTransfer(to, collateralAmountToGive);
+        if (stableAmountToRepay != 0) {
+            if (data.length != 0) {
                 ISwapper(who).swap(
                     collateral,
                     IERC20(address(stablecoin)),
@@ -575,7 +618,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         }
     }
 
-    // =================== Treasury Relationship Functions =========================
+    // ====================== TREASURY RELATIONSHIP FUNCTIONS ======================
 
     /// @inheritdoc IVaultManagerFunctions
     function accrueInterestToTreasury() external onlyTreasury returns (uint256 surplusValue, uint256 badDebtValue) {
@@ -610,7 +653,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         return newInterestAccumulator;
     }
 
-    // ============================ Liquidations ===================================
+    // ================================ LIQUIDATIONS ===============================
 
     /// @notice Liquidates an ensemble of vaults specified by their IDs
     /// @dev This function is a simplified wrapper of the function below. It is built to remove for liquidators the need to specify
@@ -645,12 +688,13 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         address who,
         bytes memory data
     ) public whenNotPaused nonReentrant returns (LiquidatorData memory liqData) {
-        if (vaultIDs.length != amounts.length || amounts.length == 0) revert IncompatibleLengths();
+        uint256 vaultIDsLength = vaultIDs.length;
+        if (vaultIDsLength != amounts.length || vaultIDsLength == 0) revert IncompatibleLengths();
         // Stores all the data about an ongoing liquidation of multiple vaults
         liqData.oracleValue = oracle.read();
         liqData.newInterestAccumulator = _accrue();
         emit LiquidatedVaults(vaultIDs);
-        for (uint256 i = 0; i < vaultIDs.length; i++) {
+        for (uint256 i; i < vaultIDsLength; ++i) {
             Vault memory vault = vaultData[vaultIDs[i]];
             // Computing if liquidation can take place for a vault
             LiquidationOpportunity memory liqOpp = _checkLiquidation(
@@ -663,25 +707,34 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
             // Makes sure not to leave a dusty amount in the vault by either not liquidating too much
             // or everything
             if (
-                (liqOpp.thresholdRepayAmount > 0 && amounts[i] > liqOpp.thresholdRepayAmount) ||
+                (liqOpp.thresholdRepayAmount != 0 && amounts[i] >= liqOpp.thresholdRepayAmount) ||
                 amounts[i] > liqOpp.maxStablecoinAmountToRepay
             ) amounts[i] = liqOpp.maxStablecoinAmountToRepay;
 
             // liqOpp.discount stores in fact `1-discount`
             uint256 collateralReleased = (amounts[i] * BASE_PARAMS * _collatBase) /
                 (liqOpp.discount * liqData.oracleValue);
+
+            _checkpointCollateral(
+                vaultIDs[i],
+                vault.collateralAmount <= collateralReleased ? vault.collateralAmount : collateralReleased,
+                false
+            );
             // Because we're rounding up in some divisions, `collateralReleased` can be greater than the `collateralAmount` of the vault
             // In this case, `stablecoinAmountToReceive` is still rounded up
             if (vault.collateralAmount <= collateralReleased) {
+                // Liquidators should never get more collateral than what's in the vault
                 collateralReleased = vault.collateralAmount;
                 // Remove all the vault's debt (debt repayed + bad debt) from VaultManager totalDebt
                 totalNormalizedDebt -= vault.normalizedDebt;
                 // Reinitializing the `vaultID`: we're not burning the vault in this case for integration purposes
                 delete vaultData[vaultIDs[i]];
-                liqData.badDebtFromLiquidation +=
-                    liqOpp.currentDebt -
-                    (amounts[i] * liquidationSurcharge) /
-                    BASE_PARAMS;
+                {
+                    uint256 debtReimbursed = (amounts[i] * liquidationSurcharge) / BASE_PARAMS;
+                    liqData.badDebtFromLiquidation += debtReimbursed < liqOpp.currentDebt
+                        ? liqOpp.currentDebt - debtReimbursed
+                        : 0;
+                }
                 // There may be an edge case in which: `amounts[i] = (currentDebt * BASE_PARAMS) / surcharge + 1`
                 // In this case, as long as `surcharge < BASE_PARAMS`, there cannot be any underflow in the operation
                 // above
@@ -724,18 +777,17 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         uint256 liquidationDiscount = (_computeLiquidationBoost(liquidator) * (BASE_PARAMS - healthFactor)) /
             BASE_PARAMS;
         // In fact `liquidationDiscount` is stored here as 1 minus discount to save some computation costs
-        // This value is necessarily > 0 as `maxLiquidationDiscount < BASE_PARAMS`
+        // This value is necessarily != 0 as `maxLiquidationDiscount < BASE_PARAMS`
         liquidationDiscount = liquidationDiscount >= maxLiquidationDiscount
             ? BASE_PARAMS - maxLiquidationDiscount
             : BASE_PARAMS - liquidationDiscount;
         // Same for the surcharge here: it's in fact 1 - the fee taken by the protocol
         uint256 surcharge = liquidationSurcharge;
-        // Checking if we're in a situation where the health factor is an increasing or a decreasing function of the
-        // amount repaid
         uint256 maxAmountToRepay;
         uint256 thresholdRepayAmount;
-        // In the first case, the health factor is an increasing function of the stablecoin amount to repay,
-        // this means that the liquidator can bring the vault to the target health ratio
+        // Checking if we're in a situation where the health factor is an increasing or a decreasing function of the
+        // amount repaid. In the first case, the health factor is an increasing function which means that the liquidator
+        // can bring the vault to the target health ratio
         if (healthFactor * liquidationDiscount * surcharge >= collateralFactor * BASE_PARAMS**2) {
             // This is the max amount to repay that will bring the person to the target health factor
             // Denom is always positive when a vault gets liquidated in this case and when the health factor
@@ -746,31 +798,27 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
                     BASE_PARAMS *
                     liquidationDiscount) /
                 (surcharge * targetHealthFactor * liquidationDiscount - (BASE_PARAMS**2) * collateralFactor);
-            // The quantity below tends to be rounded in the above direction, which means that governance or guardians should
-            // set the `targetHealthFactor` accordingly
-            // Need to check for the dust: liquidating should not leave a dusty amount in the vault
-            if (currentDebt * BASE_PARAMS <= maxAmountToRepay * surcharge + dust * BASE_PARAMS) {
-                // If liquidating to the target threshold would leave a dusty amount: the liquidator can repay all
-                // We're rounding up the max amount to repay to make sure all the debt ends up being paid
-                // and we're computing again the real value of the debt to avoid propagation of rounding errors
+            // Need to check for the dustas liquidating should not leave a dusty amount in the vault
+            uint256 dustParameter = dustLiquidation;
+            if (currentDebt * BASE_PARAMS <= maxAmountToRepay * surcharge + dustParameter * BASE_PARAMS) {
+                // If liquidating to the target threshold would leave a dusty amount: the liquidator can repay all.
+                // We're avoiding here propagation of rounding errors and rounding up the max amount to repay to make
+                // sure all the debt ends up being paid
                 maxAmountToRepay =
                     (vault.normalizedDebt * newInterestAccumulator * BASE_PARAMS) /
                     (surcharge * BASE_INTEREST) +
                     1;
-                // In this case the threshold amount is such that it leaves just enough dust
-                // This line cannot underflow as long as the  `dust` parameter is constant: it is always checked that
-                // the debt is greater than the  `dust`. If the `dust` was to increase due to an implementation upgrade
-                // we would need to add some extra checks to avoid underflows
-                // Here the `thresholdRepayAmount` is also rounded down: which means that if a liquidator repays this amount
-                // then there would be more than `dust` left in the vault
-                thresholdRepayAmount = ((currentDebt - dust) * BASE_PARAMS) / surcharge;
+                // In this case the threshold amount is such that it leaves just enough dust: amount is rounded
+                // down such that if a liquidator repays this amount then there is more than `dustLiquidation` left in
+                // the liquidated vault
+                if (currentDebt > dustParameter)
+                    thresholdRepayAmount = ((currentDebt - dustParameter) * BASE_PARAMS) / surcharge;
+                    // If there is from the beginning a dusty debt, then liquidator should repay everything that's left
+                else thresholdRepayAmount = 1;
             }
         } else {
-            // In all cases the liquidator can repay stablecoins such that they'll end up getting exactly the collateral
+            // In this case, the liquidator can repay stablecoins such that they'll end up getting exactly the collateral
             // in the liquidated vault
-            // Rounding up to make sure all gets liquidated in this case: the liquidator will never get more than the collateral
-            // amount in the vault however: we're performing the computation of the `collateralAmountInStable` again to avoid
-            // propagation of rounding errors
             maxAmountToRepay =
                 (vault.collateralAmount * liquidationDiscount * oracleValue) /
                 (BASE_PARAMS * _collatBase) +
@@ -782,7 +830,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
                     ((collateralAmountInStable - _dustCollateral) * liquidationDiscount) /
                     BASE_PARAMS;
                 // If there is from the beginning a dusty amount of collateral, liquidator should repay everything that's left
-            else thresholdRepayAmount = maxAmountToRepay;
+            else thresholdRepayAmount = 1;
         }
         liqOpp.maxStablecoinAmountToRepay = maxAmountToRepay;
         liqOpp.maxCollateralAmountGiven =
@@ -793,25 +841,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         liqOpp.currentDebt = currentDebt;
     }
 
-    /// @notice Computes the liquidation boost of a given address, that is the slope of the discount function
-    /// @param liquidator Address for which boost should be computed
-    /// @return The slope of the discount function
-    function _computeLiquidationBoost(address liquidator) internal view returns (uint256) {
-        if (address(veBoostProxy) == address(0)) {
-            return yLiquidationBoost[0];
-        } else {
-            uint256 adjustedBalance = veBoostProxy.adjusted_balance_of(liquidator);
-            if (adjustedBalance >= xLiquidationBoost[1]) return yLiquidationBoost[1];
-            else if (adjustedBalance <= xLiquidationBoost[0]) return yLiquidationBoost[0];
-            else
-                return
-                    yLiquidationBoost[0] +
-                    ((yLiquidationBoost[1] - yLiquidationBoost[0]) * (adjustedBalance - xLiquidationBoost[0])) /
-                    (xLiquidationBoost[1] - xLiquidationBoost[0]);
-        }
-    }
-
-    // ============================== Setters ======================================
+    // ================================== SETTERS ==================================
 
     /// @notice Sets parameters encoded as uint64
     /// @param param Value for the parameter
@@ -833,7 +863,7 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
             borrowFee = param;
         } else if (what == "RF") {
             // As liquidation surcharge is stored as `1-fee` and as we need `repayFee` to be smaller
-            // then the liquidation surcharge, then we need to have:
+            // than the liquidation surcharge, we need to have:
             // `liquidationSurcharge <= BASE_PARAMS - repayFee` and as such `liquidationSurcharge + repayFee <= BASE_PARAMS`
             if (param + liquidationSurcharge > BASE_PARAMS) revert TooHighParameterValue();
             repayFee = param;
@@ -861,26 +891,12 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
     }
 
     /// @notice Sets the parameters for the liquidation booster which encodes the slope of the discount
-    /// @param _veBoostProxy Address which queries veANGLE balances and adjusted balances from delegation
-    /// @param xBoost Threshold values of veANGLE adjusted balances
-    /// @param yBoost Values of the liquidation boost at the threshold values of x
-    /// @dev There are 2 modes:
-    /// When boost is enabled, `xBoost` and `yBoost` should have a length of 2, but if they have a
-    /// higher length contract will still work as expected. Contract will also work as expected if their
-    /// length differ
-    /// When boost is disabled, `_veBoostProxy` needs to be zero address and `yBoost[0]` is the base boost
     function setLiquidationBoostParameters(
         address _veBoostProxy,
         uint256[] memory xBoost,
         uint256[] memory yBoost
-    ) external onlyGovernorOrGuardian {
-        if (
-            (xBoost.length != yBoost.length) ||
-            (yBoost[0] == 0) ||
-            ((_veBoostProxy != address(0)) && (xBoost[1] <= xBoost[0] || yBoost[1] < yBoost[0]))
-        ) revert InvalidSetOfParameters();
-        veBoostProxy = IVeBoostProxy(_veBoostProxy);
-        xLiquidationBoost = xBoost;
+    ) external virtual onlyGovernorOrGuardian {
+        if (yBoost[0] == 0) revert InvalidSetOfParameters();
         yLiquidationBoost = yBoost;
         emit LiquidationBoostParametersUpdated(_veBoostProxy, xBoost, yBoost);
     }
@@ -914,6 +930,22 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         oracle = IOracle(_oracle);
     }
 
+    /// @notice Sets the dust variables
+    /// @param _dust New minimum debt allowed
+    /// @param _dustLiquidation New `dustLiquidation` value
+    /// @param dustCollateral_ New minimum collateral allowed in a vault after a liquidation
+    /// @dev dustCollateral_ is in stable value
+    function setDusts(
+        uint256 _dust,
+        uint256 _dustLiquidation,
+        uint256 dustCollateral_
+    ) external onlyGovernor {
+        if (_dust > _dustLiquidation) revert InvalidParameterValue();
+        dust = _dust;
+        dustLiquidation = _dustLiquidation;
+        _dustCollateral = dustCollateral_;
+    }
+
     /// @inheritdoc IVaultManagerFunctions
     function setTreasury(address _treasury) external onlyTreasury {
         treasury = ITreasury(_treasury);
@@ -921,4 +953,23 @@ contract VaultManager is VaultManagerPermit, IVaultManagerFunctions {
         // even though a single oracle contract could be used in different places
         oracle.setTreasury(_treasury);
     }
+
+    // ============================= VIRTUAL FUNCTIONS =============================
+
+    /// @notice Returns the liquidation boost of a given address, that is the slope of the discount function
+    /// @return The slope of the discount function
+    function _computeLiquidationBoost(address) internal view virtual returns (uint256) {
+        return yLiquidationBoost[0];
+    }
+
+    /// @notice Hook called before any collateral internal changes
+    /// @param vaultID Vault which sees its collateral amount changed
+    /// @param amount Collateral amount balance of the owner of vaultID increase/decrease
+    /// @param add Whether the balance should be increased/decreased
+    /// @param vaultID Vault which sees its collateral amount changed
+    function _checkpointCollateral(
+        uint256 vaultID,
+        uint256 amount,
+        bool add
+    ) internal virtual {}
 }

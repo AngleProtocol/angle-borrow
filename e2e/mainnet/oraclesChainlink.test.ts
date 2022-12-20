@@ -3,20 +3,20 @@ import { BigNumber, Signer, utils } from 'ethers';
 import { parseEther, parseUnits } from 'ethers/lib/utils';
 import hre, { contract, ethers } from 'hardhat';
 
+import { expect } from '../../test/hardhat/utils/chai-setup';
+import { deployUpgradeable, ZERO_ADDRESS } from '../../test/hardhat/utils/helpers';
 import {
   MockTreasury,
   MockTreasury__factory,
-  OracleWSTETHEURChainlink,
-  OracleWSTETHEURChainlink__factory,
-  OracleETHEURChainlink,
-  OracleETHEURChainlink__factory,
   OracleBTCEURChainlink,
   OracleBTCEURChainlink__factory,
+  OracleETHEURChainlink,
+  OracleETHEURChainlink__factory,
   OracleLUSDEURChainlink,
   OracleLUSDEURChainlink__factory,
+  OracleWSTETHEURChainlink,
+  OracleWSTETHEURChainlink__factory,
 } from '../../typechain';
-import { expect } from '../../test/utils/chai-setup';
-import { deployUpgradeable, ZERO_ADDRESS } from '../../test/utils/helpers';
 
 contract('Oracles Chainlink', () => {
   let deployer: SignerWithAddress;
@@ -69,7 +69,6 @@ contract('Oracles Chainlink', () => {
       console.log(receipt.toString());
     });
     it('initialization', async () => {
-      expect(await oracleETH.OUTBASE()).to.be.equal(parseEther('1'));
       expect(await oracleETH.stalePeriod()).to.be.equal(stalePeriod);
       expect(await oracleETH.treasury()).to.be.equal(treasury.address);
     });
@@ -82,7 +81,6 @@ contract('Oracles Chainlink', () => {
       console.log(receipt.toString());
     });
     it('initialization', async () => {
-      expect(await oracleBTC.OUTBASE()).to.be.equal(parseEther('1'));
       expect(await oracleBTC.stalePeriod()).to.be.equal(stalePeriod);
       expect(await oracleBTC.treasury()).to.be.equal(treasury.address);
     });
@@ -95,7 +93,6 @@ contract('Oracles Chainlink', () => {
       console.log(receipt.toString());
     });
     it('initialization', async () => {
-      expect(await oracleLUSD.OUTBASE()).to.be.equal(parseEther('1'));
       expect(await oracleLUSD.stalePeriod()).to.be.equal(stalePeriod);
       expect(await oracleLUSD.treasury()).to.be.equal(treasury.address);
     });

@@ -65,7 +65,7 @@ struct SLPData {
 }
 
 /// @title IStableMaster
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 interface IStableMaster {
     function agToken() external view returns (address);
 
@@ -87,4 +87,17 @@ interface IStableMaster {
         );
 
     function paused(bytes32) external view returns (bool);
+
+    function deposit(
+        uint256 amount,
+        address user,
+        address poolManager
+    ) external;
+
+    function withdraw(
+        uint256 amount,
+        address burner,
+        address dest,
+        address poolManager
+    ) external;
 }

@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
 
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "../interfaces/IAngleRouter.sol";
 import "../interfaces/coreModule/IAgTokenMainnet.sol";
 import "../interfaces/coreModule/ICore.sol";
@@ -8,8 +7,9 @@ import "../interfaces/coreModule/IOracleCore.sol";
 import "../interfaces/coreModule/IPerpetualManager.sol";
 import "../interfaces/coreModule/IPoolManager.sol";
 import "../interfaces/coreModule/IStableMaster.sol";
+import "./AngleBorrowHelpers.sol";
 
-pragma solidity 0.8.12;
+pragma solidity ^0.8.12;
 
 struct Parameters {
     SLPData slpData;
@@ -47,11 +47,11 @@ struct CollateralAddresses {
 }
 
 /// @title AngleHelpers
-/// @author Angle Core Team
-/// @notice Contract with view functions designed to facilitate integrations on the Core module of the Angle Protocol
+/// @author Angle Labs, Inc.
+/// @notice Contract with view functions designed to facilitate integrations on the Core and Borrow module of the Angle Protocol
 /// @dev This contract only contains view functions to be queried off-chain. It was thus not optimized for gas consumption
-contract AngleHelpers is Initializable {
-    // ======================== Helper View Functions ==============================
+contract AngleHelpers is AngleBorrowHelpers {
+    // =========================== HELPER VIEW FUNCTIONS ===========================
 
     /// @notice Gives the amount of `agToken` you'd be getting if you were executing in the same block a mint transaction
     /// with `amount` of `collateral` in the Core module of the Angle protocol as well as the value of the fees
@@ -104,7 +104,7 @@ contract AngleHelpers is Initializable {
         addresses.oracle = address(oracle);
         addresses.feeManager = IPoolManager(poolManager).feeManager();
 
-        uint256 length = 0;
+        uint256 length;
         while (true) {
             try IPoolManager(poolManager).strategyList(length) returns (address) {
                 length += 1;
@@ -113,7 +113,7 @@ contract AngleHelpers is Initializable {
             }
         }
         address[] memory strategies = new address[](length);
-        for (uint256 i = 0; i < length; ++i) {
+        for (uint256 i; i < length; ++i) {
             strategies[i] = IPoolManager(poolManager).strategyList(i);
         }
         addresses.strategies = strategies;
@@ -126,7 +126,7 @@ contract AngleHelpers is Initializable {
     function getStablecoinAddresses() external view returns (address[] memory, address[] memory) {
         address[] memory stableMasterAddresses = CORE.stablecoinList();
         address[] memory agTokenAddresses = new address[](stableMasterAddresses.length);
-        for (uint256 i = 0; i < stableMasterAddresses.length; ++i) {
+        for (uint256 i; i < stableMasterAddresses.length; ++i) {
             agTokenAddresses[i] = IStableMaster(stableMasterAddresses[i]).agToken();
         }
         return (stableMasterAddresses, agTokenAddresses);
@@ -164,7 +164,7 @@ contract AngleHelpers is Initializable {
         params.perpFeeData.haBonusMalusDeposit = perpetualManager.haBonusMalusDeposit();
         params.perpFeeData.haBonusMalusWithdraw = perpetualManager.haBonusMalusWithdraw();
 
-        uint256 length = 0;
+        uint256 length;
         while (true) {
             try perpetualManager.xHAFeesDeposit(length) returns (uint64) {
                 length += 1;
@@ -174,7 +174,7 @@ contract AngleHelpers is Initializable {
         }
         uint64[] memory data = new uint64[](length);
         uint64[] memory data2 = new uint64[](length);
-        for (uint256 i = 0; i < length; ++i) {
+        for (uint256 i; i < length; ++i) {
             data[i] = perpetualManager.xHAFeesDeposit(i);
             data2[i] = perpetualManager.yHAFeesDeposit(i);
         }
@@ -191,7 +191,7 @@ contract AngleHelpers is Initializable {
         }
         data = new uint64[](length);
         data2 = new uint64[](length);
-        for (uint256 i = 0; i < length; ++i) {
+        for (uint256 i; i < length; ++i) {
             data[i] = perpetualManager.xHAFeesWithdraw(i);
             data2[i] = perpetualManager.yHAFeesWithdraw(i);
         }
@@ -205,7 +205,7 @@ contract AngleHelpers is Initializable {
         (, poolManager) = _getStableMasterAndPoolManager(agToken, collateral);
     }
 
-    // ======================== Replica Functions ==================================
+    // ============================= REPLICA FUNCTIONS =============================
     // These replicate what is done in the other contracts of the protocol
 
     function _previewBurnAndFees(
@@ -275,7 +275,7 @@ contract AngleHelpers is Initializable {
         if (stocksUsers + amountForUserInStable > feeData.capOnStableMinted) revert InvalidAmount();
     }
 
-    // ======================== Utility Functions ==================================
+    // ============================= UTILITY FUNCTIONS =============================
     // These utility functions are taken from other contracts of the protocol
 
     function _computeHedgeRatio(uint256 newStocksUsers, bytes memory data) internal view returns (uint64 ratio) {
@@ -330,7 +330,7 @@ contract AngleHelpers is Initializable {
         (poolManager, , , ) = ROUTER.mapPoolManagers(stableMaster, collateral);
     }
 
-    // ====================== Constants and Initializers ===========================
+    // ========================= CONSTANTS AND INITIALIZERS ========================
 
     IAngleRouter public constant ROUTER = IAngleRouter(0xBB755240596530be0c1DE5DFD77ec6398471561d);
     ICore public constant CORE = ICore(0x61ed74de9Ca5796cF2F8fD60D54160D47E30B7c3);
@@ -340,7 +340,4 @@ contract AngleHelpers is Initializable {
 
     error NotInitialized();
     error InvalidAmount();
-
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() initializer {}
 }

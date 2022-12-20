@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity 0.8.12;
+pragma solidity ^0.8.12;
 
 /// @notice Action types
 enum ActionType {
@@ -32,7 +32,7 @@ struct PermitType {
 }
 
 /// @title IAngleRouterSidechain
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 /// @notice Interface for the `AngleRouter` contract on other chains
 interface IAngleRouterSidechain {
     function mixer(

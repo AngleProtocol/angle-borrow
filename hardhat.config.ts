@@ -66,6 +66,33 @@ const config: HardhatUserConfig = {
           },
         },
       },
+      'contracts/vaultManager/VaultManagerListing.sol': {
+        version: '0.8.12',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1,
+          },
+        },
+      },
+      'contracts/vaultManager/VaultManagerLiquidationBoost.sol': {
+        version: '0.8.12',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1,
+          },
+        },
+      },
+      'contracts/deprecated/OldVaultManager.sol': {
+        version: '0.8.12',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1,
+          },
+        },
+      },
       'contracts/helpers/AngleHelpers.sol': {
         version: '0.8.12',
         settings: {
@@ -93,6 +120,15 @@ const config: HardhatUserConfig = {
           },
         },
       },
+      'contracts/deprecated/vaultManager/OldVaultManager.sol': {
+        version: '0.8.12',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 1,
+          },
+        },
+      },
     },
   },
   defaultNetwork: 'hardhat',
@@ -107,13 +143,16 @@ const config: HardhatUserConfig = {
       forking: {
         enabled: argv.fork || false,
         // Mainnet
+
         url: nodeUrl('fork'),
-        blockNumber: 15445391,
+        blockNumber: 16218353,
+
         // Polygon
         /*
         url: nodeUrl('forkpolygon'),
-        blockNumber: 31505333,
+        blockNumber: 35592019,
         */
+
         // Optimism
         /*
         url: nodeUrl('optimism'),
@@ -123,6 +162,11 @@ const config: HardhatUserConfig = {
         /*
         url: nodeUrl('arbitrum'),
         blockNumber: 19356874,
+        */
+        // Avalanche
+        /*
+        url: nodeUrl('avalanche'),
+        blockNumber: 23545788,
         */
       },
       mining: argv.disableAutoMining
@@ -215,6 +259,23 @@ const config: HardhatUserConfig = {
       accounts: accounts('avalanche'),
       gas: 'auto',
       chainId: 43114,
+      verify: {
+        etherscan: {
+          apiKey: etherscanKey('avalanche'),
+        },
+      },
+    },
+    bsc: {
+      live: true,
+      url: nodeUrl('bsc'),
+      accounts: accounts('bsc'),
+      gas: 'auto',
+      chainId: 56,
+      verify: {
+        etherscan: {
+          apiKey: etherscanKey('bsc'),
+        },
+      },
     },
     aurora: {
       live: true,
@@ -222,6 +283,18 @@ const config: HardhatUserConfig = {
       accounts: accounts('aurora'),
       gas: 'auto',
       chainId: 1313161554,
+    },
+    celo: {
+      live: true,
+      url: nodeUrl('celo'),
+      accounts: accounts('celo'),
+      gas: 'auto',
+      chainId: 42220,
+      verify: {
+        etherscan: {
+          apiKey: etherscanKey('celo'),
+        },
+      },
     },
   },
   paths: {
@@ -251,11 +324,6 @@ const config: HardhatUserConfig = {
     overwrite: true,
     runOnCompile: false,
   },
-  docgen: {
-    path: './docs',
-    clear: true,
-    runOnCompile: false,
-  },
   abiExporter: {
     path: './export/abi',
     clear: true,
@@ -267,7 +335,7 @@ const config: HardhatUserConfig = {
     username: process.env.TENDERLY_USERNAME || '',
   },
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
+    apiKey: process.env.BSC_ETHERSCAN_API_KEY,
   },
   typechain: {
     outDir: 'typechain',

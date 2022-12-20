@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity 0.8.12;
+pragma solidity ^0.8.12;
 
 contract MockInterestRateComputer {
     uint256 public interestRate;
@@ -119,7 +119,7 @@ contract MockInterestRateComputer {
 
     function calculateAngle1Year() external view returns (uint256) {
         uint256 _interestAccumulator = interestAccumulator;
-        for (uint256 i = 0; i < 52; i++) {
+        for (uint256 i; i < 52; ++i) {
             _interestAccumulator = _calculateAngle(WEEK, _interestAccumulator);
         }
         return _interestAccumulator;
@@ -127,7 +127,7 @@ contract MockInterestRateComputer {
 
     function calculateAave1Year() external view returns (uint256) {
         uint256 _interestAccumulator = interestAccumulator;
-        for (uint256 i = 0; i < 52; i++) {
+        for (uint256 i; i < 52; ++i) {
             _interestAccumulator = _calculateAave(WEEK, _interestAccumulator);
         }
         return _interestAccumulator;
@@ -135,7 +135,7 @@ contract MockInterestRateComputer {
 
     function calculateMaker1Year() external view returns (uint256) {
         uint256 _interestAccumulator = interestAccumulator;
-        for (uint256 i = 0; i < 52; i++) {
+        for (uint256 i; i < 52; ++i) {
             _interestAccumulator = _calculateMaker(WEEK, _interestAccumulator);
         }
         return _interestAccumulator;

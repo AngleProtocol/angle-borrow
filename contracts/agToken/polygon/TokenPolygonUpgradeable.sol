@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.12;
+pragma solidity ^0.8.12;
 
 import "./utils/ERC20UpgradeableCustom.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
@@ -299,7 +299,7 @@ contract TokenPolygonUpgradeable is
                 amount = 0;
             }
         }
-        usage[bridgeToken][hour] = usage[bridgeToken][hour] + amount;
+        usage[bridgeToken][hour] += amount;
 
         IERC20(bridgeToken).safeTransferFrom(msg.sender, address(this), amount);
         uint256 canonicalOut = amount;
@@ -376,7 +376,7 @@ contract TokenPolygonUpgradeable is
         delete bridges[bridgeToken];
         // Deletion from `bridgeTokensList` loop
         uint256 bridgeTokensListLength = bridgeTokensList.length;
-        for (uint256 i = 0; i < bridgeTokensListLength - 1; i++) {
+        for (uint256 i; i < bridgeTokensListLength - 1; ++i) {
             if (bridgeTokensList[i] == bridgeToken) {
                 // Replace the `bridgeToken` to remove with the last of the list
                 bridgeTokensList[i] = bridgeTokensList[bridgeTokensListLength - 1];

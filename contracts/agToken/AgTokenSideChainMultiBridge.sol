@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity 0.8.12;
+pragma solidity ^0.8.12;
 
 import "./BaseAgTokenSideChain.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title AgTokenSideChainMultiBridge
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 /// @notice Contract for Angle agTokens on other chains than Ethereum mainnet
 /// @dev This contract supports bridge tokens having a minting right on the stablecoin (also referred to as the canonical
 /// or the native token)
@@ -150,16 +150,12 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
 
         // Checking requirement on the hourly volume
         uint256 hour = block.timestamp / 3600;
-        uint256 hourlyUsage = usage[bridgeToken][hour] + amount;
-        if (hourlyUsage > bridgeDetails.hourlyLimit) {
+        uint256 hourlyUsage = usage[bridgeToken][hour];
+        if (hourlyUsage + amount > bridgeDetails.hourlyLimit) {
             // Edge case when the hourly limit changes
-            if (bridgeDetails.hourlyLimit > usage[bridgeToken][hour])
-                amount = bridgeDetails.hourlyLimit - usage[bridgeToken][hour];
-            else {
-                amount = 0;
-            }
+            amount = bridgeDetails.hourlyLimit > hourlyUsage ? bridgeDetails.hourlyLimit - hourlyUsage : 0;
         }
-        usage[bridgeToken][hour] = usage[bridgeToken][hour] + amount;
+        usage[bridgeToken][hour] = hourlyUsage + amount;
 
         IERC20(bridgeToken).safeTransferFrom(msg.sender, address(this), amount);
         uint256 canonicalOut = amount;
@@ -237,7 +233,7 @@ contract AgTokenSideChainMultiBridge is BaseAgTokenSideChain {
         delete bridges[bridgeToken];
         // Deletion from `bridgeTokensList` loop
         uint256 bridgeTokensListLength = bridgeTokensList.length;
-        for (uint256 i = 0; i < bridgeTokensListLength - 1; i++) {
+        for (uint256 i; i < bridgeTokensListLength - 1; ++i) {
             if (bridgeTokensList[i] == bridgeToken) {
                 // Replace the `bridgeToken` to remove with the last of the list
                 bridgeTokensList[i] = bridgeTokensList[bridgeTokensListLength - 1];

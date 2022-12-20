@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.12;
+pragma solidity ^0.8.12;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "../../../interfaces/external/layerZero/ILayerZeroReceiver.sol";
@@ -9,7 +9,7 @@ import "../../../interfaces/external/layerZero/ILayerZeroEndpoint.sol";
 import "../../../interfaces/ITreasury.sol";
 
 /// @title NonblockingLzApp
-/// @author Angle Core Team, forked from https://github.com/LayerZero-Labs/solidity-examples/
+/// @author Angle Labs, Inc., forked from https://github.com/LayerZero-Labs/solidity-examples/
 /// @notice Base contract for bridging using LayerZero
 abstract contract NonblockingLzApp is Initializable, ILayerZeroReceiver, ILayerZeroUserApplicationConfig {
     /// @notice Layer Zero endpoint

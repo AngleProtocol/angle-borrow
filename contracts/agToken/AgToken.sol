@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity 0.8.12;
+pragma solidity ^0.8.12;
 
 import "../interfaces/IAgToken.sol";
 import "../interfaces/coreModule/IStableMaster.sol";
@@ -9,7 +9,7 @@ import "../interfaces/ITreasury.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/draft-ERC20PermitUpgradeable.sol";
 
 /// @title AgToken
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 /// @notice Base contract for agToken, that is to say Angle's stablecoins
 /// @dev This contract is used to create and handle the stablecoins of Angle protocol
 /// @dev It is still possible for any address to burn its agTokens without redeeming collateral in exchange

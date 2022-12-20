@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.12;
+pragma solidity ^0.8.12;
 
 import "../agToken/polygon/utils/ERC20UpgradeableCustom.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
@@ -358,7 +358,7 @@ contract MockPolygonAgEUR is
         delete bridges[bridgeToken];
         // Deletion from `bridgeTokensList` loop
         uint256 bridgeTokensListLength = bridgeTokensList.length;
-        for (uint256 i = 0; i < bridgeTokensListLength - 1; i++) {
+        for (uint256 i; i < bridgeTokensListLength - 1; ++i) {
             if (bridgeTokensList[i] == bridgeToken) {
                 // Replace the `bridgeToken` to remove with the last of the list
                 bridgeTokensList[i] = bridgeTokensList[bridgeTokensListLength - 1];

@@ -3,14 +3,16 @@ import { BigNumber } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
 import { contract, ethers } from 'hardhat';
 
+import { expect } from '../../test/hardhat/utils/chai-setup';
+import { ZERO_ADDRESS } from '../../test/hardhat/utils/helpers';
 import {
-  OracleBTCEURChainlinkPolygon,
-  OracleBTCEURChainlinkPolygon__factory,
   MockTreasury,
   MockTreasury__factory,
+  OracleBTCEURChainlinkPolygon,
+  OracleBTCEURChainlinkPolygon__factory,
+  OracleMAIEURChainlinkPolygon,
+  OracleMAIEURChainlinkPolygon__factory,
 } from '../../typechain';
-import { expect } from '../../test/utils/chai-setup';
-import { ZERO_ADDRESS } from '../../test/utils/helpers';
 
 contract('Oracles Chainlink', () => {
   let deployer: SignerWithAddress;
@@ -18,6 +20,7 @@ contract('Oracles Chainlink', () => {
   let bob: SignerWithAddress;
 
   let oracleBTC: OracleBTCEURChainlinkPolygon;
+  let oracleMAI: OracleMAIEURChainlinkPolygon;
   let stalePeriod: BigNumber;
   let treasury: MockTreasury;
 
@@ -33,6 +36,7 @@ contract('Oracles Chainlink', () => {
       ZERO_ADDRESS,
     )) as MockTreasury;
     oracleBTC = await new OracleBTCEURChainlinkPolygon__factory(deployer).deploy(stalePeriod, treasury.address);
+    oracleMAI = await new OracleMAIEURChainlinkPolygon__factory(deployer).deploy(stalePeriod, treasury.address);
   });
 
   describe('Oracle BTC', () => {
@@ -43,9 +47,20 @@ contract('Oracles Chainlink', () => {
       console.log(receipt.toString());
     });
     it('initialization', async () => {
-      expect(await oracleBTC.OUTBASE()).to.be.equal(parseEther('1'));
       expect(await oracleBTC.stalePeriod()).to.be.equal(stalePeriod);
       expect(await oracleBTC.treasury()).to.be.equal(treasury.address);
+    });
+  });
+  describe('Oracle MAI', () => {
+    it('read', async () => {
+      const receipt = await oracleMAI.read();
+      const gas = await oracleMAI.estimateGas.read();
+      console.log(gas.toString());
+      console.log(receipt.toString());
+    });
+    it('initialization', async () => {
+      expect(await oracleMAI.stalePeriod()).to.be.equal(stalePeriod);
+      expect(await oracleMAI.treasury()).to.be.equal(treasury.address);
     });
   });
 });

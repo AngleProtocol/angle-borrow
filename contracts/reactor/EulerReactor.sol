@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
-pragma solidity 0.8.12;
+pragma solidity ^0.8.12;
 
 import "../interfaces/external/euler/IEulerMarket.sol";
 
@@ -9,7 +9,7 @@ import "./BaseReactor.sol";
 /// @title EulerReactor
 /// @notice Reactor to mint agEUR and deposit them on Euler Finance (https://www.euler.finance/)
 /// @notice Euler markets only work with token with decimal <= 18
-/// @author Angle Core Team
+/// @author Angle Labs, Inc.
 contract EulerReactor is BaseReactor {
     using SafeERC20 for IERC20;
 

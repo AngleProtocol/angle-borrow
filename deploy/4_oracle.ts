@@ -13,35 +13,34 @@ const func: DeployFunction = async ({ deployments, web3, ethers, network }) => {
   const chainName = network.name.charAt(0).toUpperCase() + network.name.substring(1);
 
   if (!network.live || network.config.chainId === ChainId.MAINNET) {
-    console.log('Now deploying the Oracle ETH/EUR');
-    await deploy('Oracle_ETH_EUR', {
-      contract: 'OracleETHEURChainlink',
+    console.log('Now deploying the Oracle LUSD/EUR');
+    await deploy('Oracle_LUSD_EUR', {
+      contract: 'OracleLUSDEURChainlink',
       from: deployer.address,
       args: [3600 * 48, treasury],
       log: !argv.ci,
     });
-    const oracle = (await deployments.get('Oracle_ETH_EUR')).address;
-    console.log(`Successfully deployed Oracle ETH/EUR at the address ${oracle}`);
+    const oracle = (await deployments.get('Oracle_LUSD_EUR')).address;
+    console.log(`Successfully deployed Oracle LUSD/EUR at the address ${oracle}`);
     console.log('');
   } else {
-    await deploy('Oracle_ETH_EUR', {
-      contract: `OracleETHEURChainlink${chainName}`,
+    await deploy('Oracle_AVAX_EUR', {
+      contract: `OracleAVAXEURChainlink${chainName}`,
       from: deployer.address,
       args: [3600 * 48, treasury],
       log: !argv.ci,
     });
-    const oracle = (await deployments.get('Oracle_ETH_EUR')).address;
-    console.log(`Successfully deployed Oracle ETH/EUR at the address ${oracle}`);
-    console.log('');
+    const oracle = (await deployments.get('Oracle_AVAX_EUR')).address;
+    console.log(`Successfully deployed Oracle AVAX/EUR at the address ${oracle}`);
+
     await deploy('Oracle_USDC_EUR', {
       contract: `OracleUSDCEURChainlink${chainName}`,
       from: deployer.address,
       args: [3600 * 48, treasury],
       log: !argv.ci,
     });
-    const oracle3 = (await deployments.get('Oracle_USDC_EUR')).address;
-    console.log(`Successfully deployed Oracle USDC/EUR at the address ${oracle3}`);
-    console.log('');
+    const oracle2 = (await deployments.get('Oracle_USDC_EUR')).address;
+    console.log(`Successfully deployed Oracle USDC/EUR at the address ${oracle2}`);
   }
 };
 
